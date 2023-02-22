@@ -26,3 +26,11 @@ Route::middleware(DecryptPas::class)
         $router->post('/login', "UserApiController@login");
         $router->post('/GetPhone', "UserApiController@GetPhone");
     });
+
+Route::middleware(DecryptPas::class)
+    ->prefix('meal')
+    ->namespace("App\Http\Controllers\Api\Canteen")
+    ->group(function (Router $router) {
+        $router->get('/bookList/{chosenDate}', "ReceiptApiController@getReceiptList");
+//        $router->post('/GetPhone', "UserApiController@GetPhone");
+    });
