@@ -16,7 +16,8 @@ class CreateMunusesTable extends Migration
         Schema::create('menus', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('price')->default('0');
+            $table->decimal('price')->default(0.00);
+            $table->decimal('packing_price')->default(0.00);
             $table->string('introduce')->nullable();
             $table->string('image')->nullable();
             $table->integer('package')->default(0)->comment('是否打包0');
