@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Base;
 
 use App\Http\Controllers\Controller;
 use App\Models\Base\Users;
+use App\Models\Settings;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -63,8 +64,9 @@ class UserApiController extends Controller
     public function GetPhone(Request $request)
     {
 //        $appid = "wx8ab8f74af695e360";
-        $appid = env('APP_ID', '');
-        $secret = env('APP_KEY', '');
+        $appid = Settings::where('name', 'appId')->value('value'); //env('APP_ID', '');
+        $secret = Settings::where('name', 'appKey')->value('value'); //env('APP_ID', '');
+//        $secret = env('APP_KEY', '');
 //        $secret = "f4c8abfbf7b04b2100dfa3b9e0b129a0";
         $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={$appid}&secret={$secret}";
 

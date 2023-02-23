@@ -5,12 +5,12 @@ namespace App\Models\Base;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Users extends Model
+class Balance extends Model
 {
     use HasFactory;
 
-    public function amount()
+    public function userx()
     {
-        return $this->hasOne(Balance::class, 'openid', 'openid');
+        return $this->belongsTo(Users::class, 'openid', 'openid');
     }
 }
