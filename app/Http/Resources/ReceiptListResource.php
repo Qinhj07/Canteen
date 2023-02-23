@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Settings;
+use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReceiptListResource extends JsonResource
@@ -23,8 +24,8 @@ class ReceiptListResource extends JsonResource
             'type' => $types[$this->meal_type] ?: $this->meal_type,
             'status' => $typesStatus[$this->status] ?: $this->status,
             'useDate' => $this->used_at,
-            'startAt' => $this->start_at,
-            'endAt' => $this->end_at,
+            'startAt' => Carbon::parse($this->start_at)->format('H:i'),
+            'endAt' => Carbon::parse($this->end_at)->format('H:i'),
             'stopBookAt' => $this->book_limited_at
         ];
     }
