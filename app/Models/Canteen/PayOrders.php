@@ -12,6 +12,10 @@ class PayOrders extends Model
     // 支付订单
     use HasFactory, SoftDeletes;
 
+    public $casts =[
+        'items' => 'json'
+    ];
+
     public function ownOrder(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Orders::class, 'oid', 'order_id');

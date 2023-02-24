@@ -32,5 +32,8 @@ Route::middleware(DecryptPas::class)
     ->namespace("App\Http\Controllers\Api\Canteen")
     ->group(function (Router $router) {
         $router->get('/bookList/{chosenDate}', "ReceiptApiController@getReceiptList");
+        $router->post('/book', "PayOrderController@newPayOrder");
+        $router->post('/myBook', "OrderController@myBookOrderByDate");
+
 //        $router->post('/GetPhone', "UserApiController@GetPhone");
     });

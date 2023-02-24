@@ -25,4 +25,9 @@ class Orders extends Model
     {
         return $this->belongsTo(PayOrders::class, 'oid', 'order_id');
     }
+
+    public function receiptX(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Receipts::class, 'receipt_id', 'code');
+    }
 }
