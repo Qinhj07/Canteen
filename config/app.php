@@ -175,6 +175,9 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
+        // My Macros Provider -> orderByWith()
+        App\Providers\MacrosServiceProvider::class,
+
     ],
 
     /*

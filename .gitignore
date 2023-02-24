@@ -21,6 +21,5 @@ webpack.mix.js
 .styleci.yml
 app/Console
 app/Exceptions
-app/Providers
 tests
 app/Http/Middleware/DecryptPas.php

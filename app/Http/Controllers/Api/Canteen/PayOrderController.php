@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Canteen;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PayOrderListResource;
 use App\Http\Traits\NewOrder;
 use App\Http\Traits\StandardResponse;
 use App\Http\Traits\UniqueCode;
@@ -28,7 +29,7 @@ class PayOrderController extends Controller
         }
         // 这里redis setnx加锁，锁openid, 10秒之内不能下两次单防止卡顿出现两个单
         if (Redis::exists($request->get('openid'))){
-            return $this->standardResponse([5002, "ToFrequencyRequest",]);
+            return $this->standardResponse([5002, "TooFrequencyRequest",]);
         }else{
             Redis::setex($request->get('openid'), 10, 'pay');
         }
@@ -53,7 +54,7 @@ class PayOrderController extends Controller
             $order->status = 1;
             $order->items = $request->get('item');
             $order->save();
-            // 逐餐写入
+            // todo 逐餐写入， 这里应该留到检查支付时候写入
             foreach ($request->get('item') as $item) {
                 $this->newOrder($request->get('openid'), $order->order_id, $item['receiptCode'], $item['items'],
                     $request->get('phone'), $item['price'], $item['price']);
@@ -65,6 +66,25 @@ class PayOrderController extends Controller
             return $this->standardResponse([5002, "ServerError"]);
         }
         return $this->standardResponse([2000, "success", $order->order_id]);
+    }
+
+    public function getMyOrder(Request $request)
+    {
+        $paramEnum = ['openid', 'phone'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+
+        $orders = PayOrders::where('openid', $request->get('openid'))
+            ->where('phone', $request->get('phone'))
+            ->where('status', 2)
+            ->skip($request->start)
+            ->take($request->end)
+            ->latest()
+            ->get();
+        return $this->standardResponse([2000, "success", PayOrderListResource::collection($orders)]);
     }
 
 }

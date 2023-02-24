@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckLimits;
 use App\Http\Middleware\DecryptPas;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
@@ -34,6 +35,9 @@ Route::middleware(DecryptPas::class)
         $router->get('/bookList/{chosenDate}', "ReceiptApiController@getReceiptList");
         $router->post('/book', "PayOrderController@newPayOrder");
         $router->post('/myBook', "OrderController@myBookOrderByDate");
+        $router->post('/myBookWeek', "OrderController@getWeek");
+        $router->middleware(CheckLimits::class)->post('/myOrders', "PayOrderController@getMyOrder");
+        $router->middleware(CheckLimits::class)->post('/myOrderDetail', "OrderController@getByOid");
 
 //        $router->post('/GetPhone', "UserApiController@GetPhone");
     });
