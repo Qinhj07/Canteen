@@ -17,7 +17,9 @@ class CreateMunusesTable extends Migration
             $table->id();
             $table->string('name');
             $table->decimal('price')->default(0.00);
+            $table->decimal('discount_price')->comment('折扣价')->default(0.00);
             $table->decimal('packing_price')->default(0.00);
+            $table->decimal('discount_packing_price')->comment('打包折扣价')->default(0.00);
             $table->string('introduce')->nullable();
             $table->string('image')->nullable();
             $table->integer('package')->default(0)->comment('是否打包0');
