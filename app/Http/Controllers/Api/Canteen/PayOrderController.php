@@ -4,20 +4,23 @@ namespace App\Http\Controllers\Api\Canteen;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PayOrderListResource;
+use App\Http\Traits\CheckWxPay;
 use App\Http\Traits\NewOrder;
 use App\Http\Traits\StandardResponse;
 use App\Http\Traits\UniqueCode;
 use App\Models\Canteen\Orders;
 use App\Models\Canteen\PayOrders;
 use App\Models\Canteen\Receipts;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 class PayOrderController extends Controller
 {
-    use NewOrder, StandardResponse, UniqueCode;
+    use NewOrder, StandardResponse, UniqueCode, CheckWxPay;
 
     public function newPayOrder(Request $request)
     {
@@ -85,6 +88,38 @@ class PayOrderController extends Controller
             ->latest()
             ->get();
         return $this->standardResponse([2000, "success", PayOrderListResource::collection($orders)]);
+    }
+
+    public function checkOrder(Request $request)
+    {
+        $paramEnum = ['openid', 'orderId'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+        try {
+            $order = PayOrders::where('order_id', $request->get('orderId'))
+                ->where('openid', $request->get('openid'))
+                ->where('status', 1)
+                ->firstOrFail();
+        }catch (ModelNotFoundException $exception){
+            return $this->standardResponse([4004, "OrderError"]);
+        }
+        $checkResult = $this->getWxPayResult($order->order_id, $order->real_pay);
+        if ($checkResult == true){
+            try {
+                $order->status = 2;
+                $order->check_money = $order->real_pay;
+                $order->check_at = Carbon::now()->toDateTimeString();
+                $order->save();
+            }catch (QueryException $exception){
+                return $this->standardResponse([5000, "ServerError"]);
+            }
+            return $this->standardResponse([2000, "success"]);
+        }else{
+            return $this->standardResponse([5000, "PayError", $checkResult]);
+        }
     }
 
 }

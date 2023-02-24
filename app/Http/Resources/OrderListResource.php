@@ -27,7 +27,7 @@ class OrderListResource extends JsonResource
             'useDate' => object_get($this->receiptX, 'used_at'),
             'mealType' => $mealType[object_get($this->receiptX, 'meal_type')],
             'createdAt' => $this->created_at,
-            'usedAt' => $this->use_at
+            'usedAt' => $this->use_at ?: "未使用"
         ];
     }
 }

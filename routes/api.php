@@ -38,6 +38,6 @@ Route::middleware(DecryptPas::class)
         $router->post('/myBookWeek', "OrderController@getWeek");
         $router->middleware(CheckLimits::class)->post('/myOrders', "PayOrderController@getMyOrder");
         $router->middleware(CheckLimits::class)->post('/myOrderDetail', "OrderController@getByOid");
-
+        $router->post('/checkPay', "PayOrderController@checkOrder");
 //        $router->post('/GetPhone', "UserApiController@GetPhone");
     });

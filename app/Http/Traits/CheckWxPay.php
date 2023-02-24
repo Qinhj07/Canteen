@@ -8,9 +8,6 @@ use App\Models\Settings;
 
 trait CheckWxPay
 {
-    private $appid;
-    private $mchid;
-    private $key;
 
     protected  $payService;
 
@@ -19,23 +16,27 @@ trait CheckWxPay
         $appid = Settings::where('name', 'appId')->value('value');
         $key = Settings::where('name', 'appKey')->value('value');
         $mchid = Settings::where('name', 'mchid')->value('value');
-        $this->payService = new WxPayService($this->mchid, $this->appid, $this->key);
+        $this->payService = new WxPayService($mchid, $appid, $key);
     }
 
-    public function checkWxPay(string $oid)
+    /**
+     * @param string $oid
+     * @param float $payMoney
+     * @return bool
+     * @descriptioon check amount with orderId and payMoney form tencent Pay
+     */
+    public function getWxPayResult(string $oid, float $payMoney): bool
     {
-//        $payService = new WxPayService('', '', '');
-        $payRet = $this->payService->orderquery($oid);
-        if ($payRet['code'] == 0){
+        $payResult = $this->payService->orderquery($oid);
+        if ($payResult['code'] == 0){
             // pay success
-            $realMoney = $payRet['amount'];  // 微信支付收到的金额，单位为分，  订单价格乘100做比较
-            $payAt = $payRet['time'];  // 微信支付交易时间
-            // 核对金额，成功-》修改订单状态为已支付，
-            // 金额异常，
+            if ($payResult['amount'] == $payMoney * 100){
+                return true;
+            }else{
+                return $payResult['msg'];
+            }
         }else{
-            // pay error
-            // 返回支付异常信息，返回错误，交易失败
-
+            return false;
         }
     }
 }
