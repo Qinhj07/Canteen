@@ -34,9 +34,9 @@ class OrderController extends Controller
             ->where('openid', $request->get("openid"))
             ->whereHas('receiptX', function ($query) use ($request) {
                 $query->where('used_at', $request->get("chosenDate"));
-            })->get('code');
+            })->get('receipt_id');
 
-        return $this->standardResponse([2000, "success", array_column($orders->toArray(), 'code')]);
+        return $this->standardResponse([2000, "success", array_column($orders->toArray(), 'receipt_id')]);
     }
 
     public function myBookOrderByDateDetail(Request $request)
