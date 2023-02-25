@@ -14,7 +14,7 @@ trait CheckWxPay
     public function __construct()
     {
         $appid = Settings::where('name', 'appId')->value('value');
-        $key = Settings::where('name', 'appKey')->value('value');
+        $key = Settings::where('name', 'payKey')->value('value');
         $mchid = Settings::where('name', 'mchid')->value('value');
         $this->payService = new WxPayService($mchid, $appid, $key);
     }
@@ -25,18 +25,18 @@ trait CheckWxPay
      * @return bool
      * @descriptioon check amount with orderId and payMoney form tencent Pay
      */
-    public function getWxPayResult(string $oid, float $payMoney): bool
+    public function getWxPayResult(string $oid, float $payMoney)
     {
         $payResult = $this->payService->orderquery($oid);
         if ($payResult['code'] == 0){
             // pay success
             if ($payResult['amount'] == $payMoney * 100){
-                return true;
+                return 1;
             }else{
-                return $payResult['msg'];
+                return "MoneyErrorException";
             }
         }else{
-            return false;
+            return 0;
         }
     }
 }

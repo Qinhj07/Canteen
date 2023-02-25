@@ -45,7 +45,7 @@ class PayOrderController extends Controller
             }
         }
         // 创建订单
-        DB::beginTransaction();
+//        DB::beginTransaction();
         try {
             $order = new PayOrders();
             $order->order_id = $this->get32RamdonCode($request->get('openid'));
@@ -57,14 +57,14 @@ class PayOrderController extends Controller
             $order->status = 1;
             $order->items = $request->get('item');
             $order->save();
-            // todo 逐餐写入， 这里应该留到检查支付时候写入
-            foreach ($request->get('item') as $item) {
-                $this->newOrder($request->get('openid'), $order->order_id, $item['receiptCode'], $item['items'],
-                    $request->get('phone'), $item['price'], $item['price']);
-            }
-            DB::commit();
+            // 修改到检查支付时候写入
+//            foreach ($request->get('item') as $item) {
+//                $this->newOrder($request->get('openid'), $order->order_id, $item['receiptCode'], $item['items'],
+//                    $request->get('phone'), $item['price'], $item['price']);
+//            }
+//            DB::commit();
         }catch (QueryException $exception){
-            DB::rollBack();
+//            DB::rollBack();
 //            return $this->standardResponse([5002, "ServerError", $exception]);
             return $this->standardResponse([5002, "ServerError"]);
         }
@@ -106,14 +106,24 @@ class PayOrderController extends Controller
         }catch (ModelNotFoundException $exception){
             return $this->standardResponse([4004, "OrderError"]);
         }
+        if (Carbon::now()->subMinutes(15) > $order->created_at){
+            return $this->standardResponse([4004, "OrderOverTimeError"]);
+        }
         $checkResult = $this->getWxPayResult($order->order_id, $order->real_pay);
-        if ($checkResult == true){
+        if ($checkResult == 1){
+            DB::beginTransaction();
             try {
                 $order->status = 2;
                 $order->check_money = $order->real_pay;
                 $order->check_at = Carbon::now()->toDateTimeString();
                 $order->save();
+                foreach ($order->items as $item) {
+                    $this->newOrder($order->openid, $order->order_id, $item['receiptCode'], $item['items'],
+                        $order->phone, $item['price'], $item['price']);
+                }
+                DB::commit();
             }catch (QueryException $exception){
+                DB::rollBack();
                 return $this->standardResponse([5000, "ServerError"]);
             }
             return $this->standardResponse([2000, "success"]);
