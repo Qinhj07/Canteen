@@ -106,10 +106,17 @@ class PayOrderController extends Controller
         }catch (ModelNotFoundException $exception){
             return $this->standardResponse([4004, "OrderError"]);
         }
-        if (Carbon::now()->subMinutes(15) > $order->created_at){
+        if (Carbon::now()->subMinutes(10) > $order->created_at){
             return $this->standardResponse([4004, "OrderOverTimeError"]);
         }
-        $checkResult = $this->getWxPayResult($order->order_id, $order->real_pay);
+        if ($order->pay_type == 1){
+            // 微信支付
+            $checkResult = $this->getWxPayResult($order->order_id, $order->real_pay);
+        }elseif ($order->pay_type == 2){
+            return $this->standardResponse([4004, "暂不支持余额支付"]);
+        }else{
+            return $this->standardResponse([4004, "支付方式异常"]);
+        }
         if ($checkResult == 1){
             DB::beginTransaction();
             try {

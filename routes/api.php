@@ -35,9 +35,12 @@ Route::middleware(DecryptPas::class)
         $router->get('/bookList/{chosenDate}', "ReceiptApiController@getReceiptList");
         $router->post('/book', "PayOrderController@newPayOrder");
         $router->post('/myBook', "OrderController@myBookOrderByDate");
+        $router->post('/myBookDetail', "OrderController@myBookOrderByDateDetail");
         $router->post('/myBookWeek', "OrderController@getWeek");
+        $router->post('/myBookMonth', "OrderController@getMonth");
         $router->middleware(CheckLimits::class)->post('/myOrders', "PayOrderController@getMyOrder");
         $router->middleware(CheckLimits::class)->post('/myOrderDetail', "OrderController@getByOid");
         $router->post('/checkPay', "PayOrderController@checkOrder");
+        $router->post('/trade', "OrderController@tradeOrder");
 //        $router->post('/GetPhone', "UserApiController@GetPhone");
     });
