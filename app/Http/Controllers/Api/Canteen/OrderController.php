@@ -118,22 +118,22 @@ class OrderController extends Controller
             }
         }
         $dateList = [];
-        collect(Carbon::now()->startOfMonth()->daysUntil(Carbon::now()->endOfMonth()))->each(function ($item)  use (&$dateList){
-           $dateList[$item->toDateString()] = 0;
+        collect(Carbon::now()->startOfMonth()->daysUntil(Carbon::now()->endOfMonth()))->each(function ($item) use (&$dateList) {
+            $dateList[$item->toDateString()] = 0;
         });
         $orders = Orders::where('openid', $request->get('openid'))
             ->whereIn('status', [0, 1, 8])
-            ->whereHas('receiptX', function ($query){
+            ->whereHas('receiptX', function ($query) {
                 $query->whereBetween('used_at', [Carbon::now()->startOfMonth()->toDateString(), Carbon::now()->endOfMonth()->toDateString()]);
             })
             ->get();
 
-        $orders->each(function ($item) use (&$dateList){
-            if (object_get($item, 'receiptX')){
+        $orders->each(function ($item) use (&$dateList) {
+            if (object_get($item, 'receiptX')) {
                 $dateList[$item->receiptX->used_at] = 1;
             }
         });
-        return $this->standardResponse([2000, "success", $dateList]);
+        return $this->standardResponse([2000, "success", array_values($dateList)]);
     }
 
     public function tradeOrder(Request $request)
@@ -152,14 +152,43 @@ class OrderController extends Controller
                 })
                 ->where('status', 1)
                 ->firstorFail();
-        }catch (ModelNotFoundException $exception){
+        } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderNotExistsError",]);
         }
         $order->status = 8;
-        if ($order->save()){
+        if ($order->save()) {
             return $this->standardResponse([2000, "success"]);
-        }else{
+        } else {
             return $this->standardResponse([5000, "ServerError"]);
         }
+    }
+
+    public function getExtraOrder(Request $request)
+    {
+        $paramEnum = ['openid', 'type'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+        if ($request->get('type') == 1) {
+            $orders = Orders::where('openid', $request->get('openid'))
+                ->where('status', 0)
+                ->skip($request->start)
+                ->take($request->end)
+                ->latest()
+                ->get();
+        } elseif ($request->get('type') == 2){
+            $orders = Orders::where('openid', $request->get('openid'))
+                ->where('status', 9)
+                ->skip($request->start)
+                ->take($request->end)
+                ->latest()
+                ->get();
+        }else{
+            return $this->standardResponse([4001, "OrderTypeError",]);
+        }
+        return $this->standardResponse([2000, "success", OrderListResource::collection($orders)]);
+
     }
 }
