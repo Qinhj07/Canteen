@@ -49,11 +49,11 @@ class OrderController extends Controller
                 4003, 'ParamFormatError'
             ]);
         }
-        if (Carbon::parse($request->get("chosenDate")) < Carbon::now()) {
-            return $this->standardResponse([
-                4003, 'OutOfDate'
-            ]);
-        }
+//        if (Carbon::parse($request->get("chosenDate")) < Carbon::now()) {
+//            return $this->standardResponse([
+//                4003, 'OutOfDate'
+//            ]);
+//        }
         $orders = Orders::whereIn('status', [0, 1])
             ->where('openid', $request->get("openid"))
             ->whereHas('receiptX', function ($query) use ($request) {
