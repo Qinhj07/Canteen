@@ -177,6 +177,8 @@ return [
 
         // My Macros Provider -> orderByWith()
         App\Providers\MacrosServiceProvider::class,
+        // Qrcode Provider
+        SimpleSoftwareIO\QrCode\QrCodeServiceProvider::class
 
     ],
 
@@ -233,6 +235,8 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
 
+        // qrcode
+        'QrCode' => SimpleSoftwareIO\QrCode\Facades\QrCode::class
     ],
 
 ];

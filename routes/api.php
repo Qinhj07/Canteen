@@ -41,6 +41,9 @@ Route::middleware(DecryptPas::class)
         $router->middleware(CheckLimits::class)->post('/myOrders', "PayOrderController@getMyOrder");
         $router->middleware(CheckLimits::class)->post('/myOrderDetail', "OrderController@getByOid");
         $router->post('/checkPay', "PayOrderController@checkOrder");
+        $router->post('/trade', "OrderController@tradeOrder");
         $router->middleware(CheckLimits::class)->post('/other', "OrderController@getExtraOrder");
+        $router->get('/tradeCnt', "TradeApiController@getOnTradeOrderNum");
+        $router->post('/getQrcode', "OrderController@getQrcode");
 //        $router->post('/GetPhone', "UserApiController@GetPhone");
     });

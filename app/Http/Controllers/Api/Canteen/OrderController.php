@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\Canteen;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\DailyOrderResource;
 use App\Http\Resources\OrderListResource;
 use App\Http\Traits\StandardResponse;
 use App\Models\Canteen\Orders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use QrCode;
 
 class OrderController extends Controller
 {
@@ -183,19 +183,38 @@ class OrderController extends Controller
                 ->take($request->end)
                 ->latest()
                 ->get();
-        } elseif ($request->get('type') == 2){
+        } elseif ($request->get('type') == 2) {
             $orders = Orders::where('openid', $request->get('openid'))
                 ->where('status', 9)
                 ->skip($request->start)
                 ->take($request->end)
                 ->latest()
                 ->get();
-        }else{
+        } else {
             return $this->standardResponse([4001, "OrderTypeError",]);
         }
         return $this->standardResponse([2000, "success", OrderListResource::collection($orders)]);
 
     }
 
+    public function getQrcode(Request $request)
+    {
+        $paramEnum = ['openid', 'code'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+        try {
+            $order = Orders::where('code', $request->get('code'))->whereHas('receiptX', function ($query) {
+                $query->where('used_at', Carbon::now()->toDateString());
+            })->where('status', 1)->firstorFail();
+        } catch (ModelNotFoundException $exception) {
+            return $this->standardResponse([4004, "OrderNotFoundError",]);
+        }
 
+        $img = QrCode::format('png')->size(200)->generate($order->code);
+
+        return $this->standardResponse([2000, "success", 'data:image/png;base64,' . base64_encode($img)]);
+    }
 }
