@@ -111,14 +111,19 @@ class OrderController extends Controller
 
     public function getMonth(Request $request)
     {
-        $paramEnum = ['openid'];
+        $paramEnum = ['openid', 'chosenDate'];
         foreach ($paramEnum as $key => $value) {
             if (blank($request->get($value))) {
                 return $this->standardResponse([4001, "No {$value} Error",]);
             }
         }
+        if (!strtotime($request->get("chosenDate"))) {
+            return $this->standardResponse([
+                4003, 'ParamFormatError'
+            ]);
+        }
         $dateList = [];
-        collect(Carbon::now()->startOfMonth()->daysUntil(Carbon::now()->endOfMonth()))->each(function ($item) use (&$dateList) {
+        collect(Carbon::parse($request->get("chosenDate"))->startOfMonth()->daysUntil(Carbon::parse($request->get("chosenDate"))->endOfMonth()))->each(function ($item) use (&$dateList) {
             $dateList[$item->toDateString()] = 0;
         });
         $orders = Orders::where('openid', $request->get('openid'))
@@ -191,4 +196,6 @@ class OrderController extends Controller
         return $this->standardResponse([2000, "success", OrderListResource::collection($orders)]);
 
     }
+
+
 }
