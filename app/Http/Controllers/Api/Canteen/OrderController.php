@@ -208,13 +208,18 @@ class OrderController extends Controller
         try {
             $order = Orders::where('code', $request->get('code'))->whereHas('receiptX', function ($query) {
                 $query->where('used_at', Carbon::now()->toDateString());
-            })->where('status', 1)->firstorFail();
+            })->firstorFail();
         } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderNotFoundError",]);
         }
+        if ($order->status == 1){
+            $img = QrCode::format('png')->size(200)->generate($order->code);
+            return $this->standardResponse([2000, "success", 'data:image/png;base64,' . base64_encode($img)]);
+        }elseif ($order->status == 0){
+            return $this->standardResponse([2000, "success", $order->items]);
+        }else{
+            return $this->standardResponse([4003, "无订餐信息",]);
+        }
 
-        $img = QrCode::format('png')->size(200)->generate($order->code);
-
-        return $this->standardResponse([2000, "success", 'data:image/png;base64,' . base64_encode($img)]);
     }
 }
