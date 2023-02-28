@@ -26,6 +26,7 @@ Route::middleware(DecryptPas::class)
     ->group(function (Router $router) {
         $router->post('/login', "UserApiController@login");
         $router->post('/GetPhone', "UserApiController@GetPhone");
+        $router->post('/getBalance', "BalanceApiController@getMyBalance");
     });
 
 Route::middleware(DecryptPas::class)
