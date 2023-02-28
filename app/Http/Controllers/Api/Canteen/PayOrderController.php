@@ -31,16 +31,16 @@ class PayOrderController extends Controller
             }
         }
         // 这里redis setnx加锁，锁openid, 10秒之内不能下两次单防止卡顿出现两个单
-        if (Redis::exists($request->get('openid'))){
+        if (Redis::exists($request->get('openid'))) {
             return $this->standardResponse([5002, "TooFrequencyRequest",]);
-        }else{
+        } else {
             Redis::setex($request->get('openid'), 10, 'pay');
         }
         // 检查每一餐是不是有订了的，或者餐码对应餐不存在的，不创建订单
         foreach ($request->get('item') as $item) {
             $receipt = Receipts::where('code', $item['receiptCode'])->doesntExist();
             $bookLog = Orders::where('receipt_id', $item['receiptCode'])->where('status', 1)->exists();
-            if ($bookLog || $receipt){
+            if ($bookLog || $receipt) {
                 return $this->standardResponse([5002, "{$item['receiptCode']} ExistsError",]);
             }
         }
@@ -63,7 +63,7 @@ class PayOrderController extends Controller
 //                    $request->get('phone'), $item['price'], $item['price']);
 //            }
 //            DB::commit();
-        }catch (QueryException $exception){
+        } catch (QueryException $exception) {
 //            DB::rollBack();
 //            return $this->standardResponse([5002, "ServerError", $exception]);
             return $this->standardResponse([5002, "ServerError"]);
@@ -103,10 +103,10 @@ class PayOrderController extends Controller
                 ->where('openid', $request->get('openid'))
                 ->where('status', 1)
                 ->firstOrFail();
-        }catch (ModelNotFoundException $exception){
+        } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderError"]);
         }
-        if (Carbon::now()->subMinutes(10) > $order->created_at){
+        if (Carbon::now()->subMinutes(10) > $order->created_at) {
             return $this->standardResponse([4004, "OrderOverTimeError"]);
         }
         if ($order->pay_type == 1){
@@ -117,7 +117,7 @@ class PayOrderController extends Controller
         }else{
             return $this->standardResponse([4004, "支付方式异常"]);
         }
-        if ($checkResult == 1){
+        if ($checkResult == 1) {
             DB::beginTransaction();
             try {
                 $order->status = 2;
@@ -125,16 +125,21 @@ class PayOrderController extends Controller
                 $order->check_at = Carbon::now()->toDateTimeString();
                 $order->save();
                 foreach ($order->items as $item) {
+                    if (array_key_exists("originOrder", $item)) {
+                        // 删redis, 改状态
+                        Redis::srem('tradeCode', $item["originOrder"]);
+                        Orders::where('code', $item["originOrder"])->update(['status' => 9]);
+                    }
                     $this->newOrder($order->openid, $order->order_id, $item['receiptCode'], $item['items'],
                         $order->phone, $item['price'], $item['price']);
                 }
                 DB::commit();
-            }catch (QueryException $exception){
+            } catch (QueryException $exception) {
                 DB::rollBack();
                 return $this->standardResponse([5000, "ServerError"]);
             }
             return $this->standardResponse([2000, "success"]);
-        }else{
+        } else {
             return $this->standardResponse([5000, "PayError", $checkResult]);
         }
     }

@@ -44,6 +44,8 @@ Route::middleware(DecryptPas::class)
         $router->post('/trade', "OrderController@tradeOrder");
         $router->middleware(CheckLimits::class)->post('/other', "OrderController@getExtraOrder");
         $router->get('/tradeCnt', "TradeApiController@getOnTradeOrderNum");
+        $router->get('/tradeList/{mealType}/{mealName}', "TradeApiController@getTradeOrderList");
         $router->post('/getQrcode', "OrderController@getQrcode");
+        $router->post('/buyOrder', "TradeApiController@buyTradeOrder");
 //        $router->post('/GetPhone', "UserApiController@GetPhone");
     });
