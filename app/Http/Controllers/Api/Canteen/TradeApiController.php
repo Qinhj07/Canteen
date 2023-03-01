@@ -24,18 +24,20 @@ class TradeApiController extends Controller
 //        $lunchReceipt = Receipts::where('used_at', Carbon::now()->toDateString())->where('meal_type', $type)->value('menus');
         $receiptList = [];
         collect($receipt)->each(function ($item) use (&$receiptList) {
-            $receiptList[] = $item['name'];
+            $receiptList[] = ['name' => $item['name'], 'price' => $item['price']];
         });
 //        collect($lunchReceipt)->each(function ($item) use (&$receiptList) {
 //            $receiptList[] = $item['name'];
 //        });
         $ret = [];
         collect($receiptList)->each(function ($item) use (&$ret) {
-            $ret[$item] = Orders::whereHas('receiptX', function ($query) {
+            $name = $item["name"];
+            $cnt = Orders::whereHas('receiptX', function ($query) {
                 $query->where('used_at', Carbon::now()->toDateString());
             })->where('status', 8)
-                ->whereRaw("items-> '$[*].name' LIKE '%$item%'")
+                ->whereRaw("items-> '$[*].name' LIKE '%$name%'")
                 ->count();
+            $ret[] = ['name' => $item['name'], 'price' => $item['price'], 'number' => $cnt];
         });
         return $this->standardResponse([2000, "success", $ret]);
     }
