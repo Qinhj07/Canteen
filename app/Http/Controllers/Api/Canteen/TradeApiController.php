@@ -18,17 +18,17 @@ class TradeApiController extends Controller
 {
     use StandardResponse, UniqueCode;
 
-    public function getOnTradeOrderNum()
+    public function getOnTradeOrderNum(int $type)
     {
-        $breakfastReceipt = Receipts::where('used_at', Carbon::now()->toDateString())->where('meal_type', 1)->value('menus');
-        $lunchReceipt = Receipts::where('used_at', Carbon::now()->toDateString())->where('meal_type', 2)->value('menus');
+        $receipt = Receipts::where('used_at', Carbon::now()->toDateString())->where('meal_type', $type)->value('menus');
+//        $lunchReceipt = Receipts::where('used_at', Carbon::now()->toDateString())->where('meal_type', $type)->value('menus');
         $receiptList = [];
-        collect($breakfastReceipt)->each(function ($item) use (&$receiptList) {
+        collect($receipt)->each(function ($item) use (&$receiptList) {
             $receiptList[] = $item['name'];
         });
-        collect($lunchReceipt)->each(function ($item) use (&$receiptList) {
-            $receiptList[] = $item['name'];
-        });
+//        collect($lunchReceipt)->each(function ($item) use (&$receiptList) {
+//            $receiptList[] = $item['name'];
+//        });
         $ret = [];
         collect($receiptList)->each(function ($item) use (&$ret) {
             $ret[$item] = Orders::whereHas('receiptX', function ($query) {
@@ -111,7 +111,12 @@ class TradeApiController extends Controller
             $payOrder->items = $item;
             $payOrder->save();
             if ($payOrder->id) {
-                return $this->standardResponse([2000, "success", $payOrder->order_id]);
+                return $this->standardResponse([2000, "success",
+                    [
+                        "orderId" => $payOrder->order_id,
+                        'price' => $payOrder->real_pay
+                    ]
+                ]);
             }
             return $this->standardResponse([5002, "ServerError"]);
         } else {

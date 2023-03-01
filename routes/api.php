@@ -27,6 +27,8 @@ Route::middleware(DecryptPas::class)
         $router->post('/login', "UserApiController@login");
         $router->post('/GetPhone', "UserApiController@GetPhone");
         $router->post('/getBalance', "BalanceApiController@getMyBalance");
+        $router->post('/charge', "BalanceApiController@charge");
+        $router->post('/checkCharge', "BalanceApiController@checkCharge");
     });
 
 Route::middleware(DecryptPas::class)
@@ -44,7 +46,7 @@ Route::middleware(DecryptPas::class)
         $router->post('/checkPay', "PayOrderController@checkOrder");
         $router->post('/trade', "OrderController@tradeOrder");
         $router->middleware(CheckLimits::class)->post('/other', "OrderController@getExtraOrder");
-        $router->get('/tradeCnt', "TradeApiController@getOnTradeOrderNum");
+        $router->get('/tradeCnt/{type}', "TradeApiController@getOnTradeOrderNum");
         $router->get('/tradeList/{mealType}/{mealName}', "TradeApiController@getTradeOrderList");
         $router->post('/getQrcode', "OrderController@getQrcode");
         $router->post('/buyOrder', "TradeApiController@buyTradeOrder");
