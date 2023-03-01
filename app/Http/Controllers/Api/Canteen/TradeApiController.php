@@ -24,7 +24,7 @@ class TradeApiController extends Controller
 //        $lunchReceipt = Receipts::where('used_at', Carbon::now()->toDateString())->where('meal_type', $type)->value('menus');
         $receiptList = [];
         collect($receipt)->each(function ($item) use (&$receiptList) {
-            $receiptList[] = ['name' => $item['name'], 'price' => $item['price']];
+            $receiptList[] = ['name' => $item['name'], 'price' => $item['discountPrice']];
         });
 //        collect($lunchReceipt)->each(function ($item) use (&$receiptList) {
 //            $receiptList[] = $item['name'];

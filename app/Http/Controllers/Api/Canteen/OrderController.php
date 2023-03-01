@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Canteen;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderListResource;
+use App\Http\Traits\CheckUser;
 use App\Http\Traits\StandardResponse;
+use App\Http\Traits\WithdrawalWxPay;
 use App\Models\Canteen\Orders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -13,7 +15,7 @@ use QrCode;
 
 class OrderController extends Controller
 {
-    use StandardResponse;
+    use StandardResponse, CheckUser, WithdrawalWxPay;
 
     public function myBookOrderByDate(Request $request)
     {
@@ -100,7 +102,7 @@ class OrderController extends Controller
             }
         }
         $orders = Orders::where('oid', $request->get('orderId'))
-            ->whereIn('status', [0, 1])
+//            ->whereIn('status', [0, 1])
             ->orderByWith('receiptX', 'used_at', 'asc')
             ->skip($request->start)
             ->take($request->end)
@@ -222,4 +224,29 @@ class OrderController extends Controller
         }
 
     }
+
+    public function withdrawal(Request $request)
+    {
+        $paramEnum = ['openid', 'code'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+//        if ($this->checkUserByOpenid($request->get('openid'))) {
+//            return $this->standardResponse([4004, "NoUserError",]);
+//        }
+        $discountPrice = 0.00;
+        try {
+            $order = Orders::where('code', $request->get('code'))->where('status', 1)->firstOrFail();
+        }catch (ModelNotFoundException $exception){
+            return $this->standardResponse([4004, "OrderNotFoundError",]);
+        }
+//        $drawResult = $this->;
+//        $order->status = 7;
+        $reason = "退餐退款";
+        return $this->doRefund($order->openid, $order->real_price, $reason, $order->orderX->real_pay);
+
+    }
+
 }
