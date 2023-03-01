@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Canteen;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PayOrderListResource;
+use App\Http\Traits\CheckBalancePay;
 use App\Http\Traits\CheckWxPay;
 use App\Http\Traits\NewOrder;
 use App\Http\Traits\StandardResponse;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Redis;
 
 class PayOrderController extends Controller
 {
-    use NewOrder, StandardResponse, UniqueCode, CheckWxPay;
+    use NewOrder, StandardResponse, UniqueCode, CheckWxPay, CheckBalancePay;
 
     public function newPayOrder(Request $request)
     {
@@ -109,12 +110,13 @@ class PayOrderController extends Controller
         if (Carbon::now()->subMinutes(10) > $order->created_at) {
             return $this->standardResponse([4004, "OrderOverTimeError"]);
         }
-        if ($order->pay_type == 1){
+        if ($order->pay_type == 1) {
             // 微信支付
             $checkResult = $this->getWxPayResult($order->order_id, $order->real_pay);
-        }elseif ($order->pay_type == 2){
-            return $this->standardResponse([4004, "暂不支持余额支付"]);
-        }else{
+        } elseif ($order->pay_type == 2) {
+            $checkResult = $this->checkBalalnce($order->openid, $order->real_pay);
+//            return $this->standardResponse([4004, "暂不支持余额支付"]);
+        } else {
             return $this->standardResponse([4004, "支付方式异常"]);
         }
         if ($checkResult == 1) {
@@ -144,4 +146,15 @@ class PayOrderController extends Controller
         }
     }
 
+    public function getPayErrorOrder(Request $request)
+    {
+        $paramEnum = ['openid'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+        $orders = PayOrders::where('status', 1)->latest()->take(1)->get();
+        return $this->standardResponse([2000, "success", PayOrderListResource::collection($orders)]);
+    }
 }
