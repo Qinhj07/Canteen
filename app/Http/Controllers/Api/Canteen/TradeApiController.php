@@ -7,6 +7,7 @@ use App\Http\Resources\OrderListResource;
 use App\Http\Resources\OrderTradeListResource;
 use App\Http\Traits\StandardResponse;
 use App\Http\Traits\UniqueCode;
+use App\Http\Traits\WxPayV3;
 use App\Models\Canteen\Orders;
 use App\Models\Canteen\PayOrders;
 use App\Models\Canteen\Receipts;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Redis;
 
 class TradeApiController extends Controller
 {
-    use StandardResponse, UniqueCode;
+    use StandardResponse, UniqueCode, WxPayV3;
 
     public function getOnTradeOrderNum(int $type)
     {
@@ -119,6 +120,8 @@ class TradeApiController extends Controller
             $payOrder->items = $item;
             $payOrder->save();
             if ($payOrder->id) {
+                // 原订单退款
+                $this->doRefund($order->oid, $order->real_price, "交易成功退款", $order->orderX->real_pay, $order->created_at, $order->phone);
                 return $this->standardResponse([2000, "success",
                     [
                         "orderId" => $payOrder->order_id,
