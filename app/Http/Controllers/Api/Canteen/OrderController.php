@@ -145,22 +145,23 @@ class OrderController extends Controller
 
     public function tradeOrder(Request $request)
     {
-        $paramEnum = ['openid', 'orderId'];
+        $paramEnum = ['openid', 'code'];
         foreach ($paramEnum as $key => $value) {
             if (blank($request->get($value))) {
                 return $this->standardResponse([4001, "No {$value} Error",]);
             }
         }
         try {
-            $order = Orders::where('oid', $request->get('orderId'))
+            $order = Orders::where('code', $request->get('code'))
                 ->where('openid', $request->get('openid'))
-                ->wherHas('receiptX', function ($query) {
-                    $query->whereBetween('used_at', ">=", Carbon::now()->toDateString());
-                })
                 ->where('status', 1)
                 ->firstorFail();
         } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderNotExistsError",]);
+        }
+        $useLimitedAt = $order->receiptX->used_at . " " . $order->receiptX->end_at;
+        if (Carbon::now() > $useLimitedAt) {
+            return $this->standardResponse([4004, "OutOfUsedLimitedTimeError",]);
         }
         $order->status = 8;
         if ($order->save()) {
@@ -242,17 +243,17 @@ class OrderController extends Controller
             return $this->standardResponse([4004, "OrderNotFoundError",]);
         }
         // 超时检测，超过预定时间不可以退
-        if (Carbon::now() > $order->receiptX->book_limited_at){
+        if (Carbon::now() > $order->receiptX->book_limited_at) {
             return $this->standardResponse([4004, "OverBookTimeLimitError"]);
         }
         $reason = "退餐退款";
         $ret = $this->doRefund($order->oid, $order->real_price, $reason, $order->orderX->real_pay, $order->created_at, $order->phone);
-        if ($ret == $order->real_price * 100){
+        if ($ret == $order->real_price * 100) {
             // 退款成功
             $order->status = 7;
             $order->save();
-            return  $this->standardResponse([2000, 'success']);
-        }else{
+            return $this->standardResponse([2000, 'success']);
+        } else {
             return $this->standardResponse([5000, 'ServerError']);
         }
 
