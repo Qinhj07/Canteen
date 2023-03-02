@@ -149,11 +149,12 @@ class TradeApiController extends Controller
         } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4003, "OrderExistsError"]);
         }
-        $code = ($payOrder->items)[0]['originOrder'];
-        if ($code) {
+        if (array_key_exists('originOrder', ($payOrder->items)[0])){
+            $code = ($payOrder->items)[0]['originOrder'];
             Redis::srem('tradeCode', $code);
-            $payOrder->status = 8;
-            $payOrder->save();
+        }
+        $payOrder->status = 8;
+        if($payOrder->save()){
             return $this->standardResponse([2000, "success", $code]);
         }else{
             return $this->standardResponse([5000, "ServerError"]);
