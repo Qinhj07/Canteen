@@ -241,6 +241,8 @@ class OrderController extends Controller
         } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderNotFoundError",]);
         }
+        // 超时检测，超过预定时间不可以退
+
         $reason = "退餐退款";
         $ret = $this->doRefund($order->oid, $order->real_price, $reason, $order->orderX->real_pay, $order->created_at, $order->phone);
         if ($ret == $order->real_price * 100){

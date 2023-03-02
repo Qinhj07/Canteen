@@ -11,6 +11,7 @@ use App\Models\Canteen\Orders;
 use App\Models\Canteen\PayOrders;
 use App\Models\Canteen\Receipts;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 
@@ -66,6 +67,11 @@ class TradeApiController extends Controller
             return $this->standardResponse([5002, "TooFrequencyRequest",]);
         } else {
             Redis::setex($request->get('openid'), 10, 'pay');
+        }
+        $order = PayOrders::where('openid', $request->get('openid'))
+            ->where('status', 1)->whereDate('created_at', Carbon::now()->toDateString())->exists();
+        if ($order){
+            return $this->standardResponse([4003, "ExistsUnPayError"]);
         }
         if (!in_array($request->get('mealType'), [1, 2])) {
             return $this->standardResponse([4003, "MealTypeError",]);
@@ -123,6 +129,31 @@ class TradeApiController extends Controller
             return $this->standardResponse([5002, "ServerError"]);
         } else {
             return $this->standardResponse([5000, "OrderNotExistsError"]);
+        }
+    }
+
+    public function cancelUnPayOrder(Request $request)
+    {
+        $paramEnum = ['openid', 'orderId'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+        try {
+            $payOrder = PayOrders::where('order_id', $request->get('orderId'))->where('openid', $request->get('openid'))
+                ->where('status', 1)->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            return $this->standardResponse([4003, "OrderExistsError"]);
+        }
+        $code = ($payOrder->items)[0]['originOrder'];
+        if ($code) {
+            Redis::srem('tradeCode', $code);
+            $payOrder->status = 8;
+            $payOrder->save();
+            return $this->standardResponse([2000, "success", $code]);
+        }else{
+            return $this->standardResponse([5000, "ServerError"]);
         }
     }
 }

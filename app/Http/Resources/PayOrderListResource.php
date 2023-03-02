@@ -14,7 +14,7 @@ class PayOrderListResource extends JsonResource
      */
     public function toArray($request)
     {
-        $status = [1 => "未支付", 2 => "已支付", 9 => "支付异常"];
+        $status = [1 => "未支付", 2 => "已支付", 8=>"取消订单", 9 => "支付异常"];
         return [
             'orderId' => $this->order_id,
             'price' => $this->price,
