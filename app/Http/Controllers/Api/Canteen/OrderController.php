@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderListResource;
 use App\Http\Traits\CheckUser;
 use App\Http\Traits\StandardResponse;
-use App\Http\Traits\WithdrawalWxPay;
+use App\Http\Traits\WxPayV3;
 use App\Models\Canteen\Orders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ use QrCode;
 
 class OrderController extends Controller
 {
-    use StandardResponse, CheckUser, WithdrawalWxPay;
+    use StandardResponse, CheckUser, WxPayV3;
 
     public function myBookOrderByDate(Request $request)
     {
@@ -214,12 +214,12 @@ class OrderController extends Controller
         } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderNotFoundError",]);
         }
-        if ($order->status == 1){
+        if ($order->status == 1) {
             $img = QrCode::format('png')->size(200)->generate($order->code);
             return $this->standardResponse([2000, "success", 'data:image/png;base64,' . base64_encode($img)]);
-        }elseif ($order->status == 0){
+        } elseif ($order->status == 0) {
             return $this->standardResponse([2000, "success", $order->items]);
-        }else{
+        } else {
             return $this->standardResponse([4003, "无订餐信息",]);
         }
 
@@ -233,19 +233,24 @@ class OrderController extends Controller
                 return $this->standardResponse([4001, "No {$value} Error",]);
             }
         }
-//        if ($this->checkUserByOpenid($request->get('openid'))) {
-//            return $this->standardResponse([4004, "NoUserError",]);
-//        }
-        $discountPrice = 0.00;
+        if ($this->checkUserByOpenid($request->get('openid'))) {
+            return $this->standardResponse([4004, "NoUserError",]);
+        }
         try {
             $order = Orders::where('code', $request->get('code'))->where('status', 1)->firstOrFail();
-        }catch (ModelNotFoundException $exception){
+        } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderNotFoundError",]);
         }
-//        $drawResult = $this->;
-//        $order->status = 7;
         $reason = "退餐退款";
-        return $this->doRefund($order->openid, $order->real_price, $reason, $order->orderX->real_pay);
+        $ret = $this->doRefund($order->oid, $order->real_price, $reason, $order->orderX->real_pay, $order->created_at, $order->phone);
+        if ($ret == $order->real_price * 100){
+            // 退款成功
+            $order->status = 7;
+            $order->save();
+            return  $this->standardResponse([2000, 'success']);
+        }else{
+            return $this->standardResponse([5000, 'ServerError']);
+        }
 
     }
 

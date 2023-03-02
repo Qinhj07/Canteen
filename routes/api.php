@@ -51,5 +51,6 @@ Route::middleware(DecryptPas::class)
         $router->post('/getQrcode', "OrderController@getQrcode");
         $router->post('/buyOrder', "TradeApiController@buyTradeOrder");
         $router->post('/errorOrder', "PayOrderController@getPayErrorOrder");
+        $router->post('/refund', "OrderController@withdrawal");
 //        $router->post('/GetPhone', "UserApiController@GetPhone");
     });
