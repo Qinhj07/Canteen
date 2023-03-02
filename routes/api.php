@@ -53,5 +53,5 @@ Route::middleware(DecryptPas::class)
         $router->post('/errorOrder', "PayOrderController@getPayErrorOrder");
         $router->post('/refund', "OrderController@withdrawal");
         $router->post('/cancelOrder', "TradeApiController@cancelUnPayOrder");
-//        $router->post('/GetPhone', "UserApiController@GetPhone");
+        $router->get('/use/{code}', "OrderController@useOrder");
     });

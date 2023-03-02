@@ -7,7 +7,9 @@ use App\Http\Resources\OrderListResource;
 use App\Http\Traits\CheckUser;
 use App\Http\Traits\StandardResponse;
 use App\Http\Traits\WxPayV3;
+use App\Models\Base\Balance;
 use App\Models\Canteen\Orders;
+use App\Models\Canteen\PayOrders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -246,8 +248,18 @@ class OrderController extends Controller
         if (Carbon::now() > $order->receiptX->book_limited_at) {
             return $this->standardResponse([4004, "OverBookTimeLimitError"]);
         }
-        $reason = "退餐退款";
-        $ret = $this->doRefund($order->oid, $order->real_price, $reason, $order->orderX->real_pay, $order->created_at, $order->phone);
+        $payOrder = PayOrders::where('order_id', $order->oid)->first();
+        if (object_get($payOrder, 'pat_type', -1) == 1) {
+            // 微信支付
+            $reason = "退餐退款";
+            $ret = $this->doRefund($order->oid, $order->real_price, $reason, $order->orderX->real_pay, $order->created_at, $order->phone);
+        } elseif (object_get($payOrder, 'pat_type', -1) == 2) {
+            // 余额支付
+            Balance::where('openid', $order->openid)->increment('amount', $order->real_price);
+            $ret = $order->real_price * 100;
+        } else {
+            $ret = 0;
+        }
         if ($ret == $order->real_price * 100) {
             // 退款成功
             $order->status = 7;
@@ -257,6 +269,28 @@ class OrderController extends Controller
             return $this->standardResponse([5000, 'ServerError']);
         }
 
+    }
+
+    public function useOrder(string $code)
+    {
+        try {
+            $order = Orders::where('code', $code)->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            return $this->standardResponse([4004, "OrderNotFoundError",]);
+        }
+        if ($order->status == 0) {
+            return $this->standardResponse([4002, "OrderUsedError"]); // 订单已使用
+        }
+        $startAt = $order->receiptX->used_at . " " . $order->receiptX->start_at;
+        $endAt = $order->receiptX->used_at . " " . $order->receiptX->end_at;
+        if (Carbon::now() < $startAt || Carbon::now() > $endAt) {
+            return $this->standardResponse([4003, "OrderNotAtUseTimeError"]);  // 超时刷码
+        }
+        $order->status = 0;
+        $order->use_at = Carbon::now()->toDateTimeString();
+        if ($order->save()) {
+            return $this->standardResponse([2000, "success"]);
+        }
     }
 
 }
