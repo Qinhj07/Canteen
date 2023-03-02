@@ -155,7 +155,7 @@ class TradeApiController extends Controller
         }
         $payOrder->status = 8;
         if($payOrder->save()){
-            return $this->standardResponse([2000, "success", $code]);
+            return $this->standardResponse([2000, "success"]);
         }else{
             return $this->standardResponse([5000, "ServerError"]);
         }
