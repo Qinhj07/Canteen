@@ -131,7 +131,7 @@ class OrderController extends Controller
             $dateList[$item->toDateString()] = 0;
         });
         $orders = Orders::where('openid', $request->get('openid'))
-            ->whereIn('status', [0, 1, 8])
+            ->whereIn('status', [0, 1])
             ->whereHas('receiptX', function ($query) {
                 $query->whereBetween('used_at', [Carbon::now()->startOfMonth()->toDateString(), Carbon::now()->endOfMonth()->toDateString()]);
             })
@@ -163,7 +163,7 @@ class OrderController extends Controller
         }
         $useLimitedAt = $order->receiptX->used_at . " " . $order->receiptX->end_at;
         if (Carbon::now() > $useLimitedAt) {
-            return $this->standardResponse([4004, "OutOfUsedLimitedTimeError",]);
+            return $this->standardResponse([4004, "OutOfUsedLimitedTimeError"]);
         }
         $order->status = 8;
         if ($order->save()) {
