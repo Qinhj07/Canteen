@@ -55,3 +55,11 @@ Route::middleware(DecryptPas::class)
         $router->post('/cancelOrder', "TradeApiController@cancelUnPayOrder");
         $router->get('/use/{code}', "OrderController@useOrder");
     });
+
+Route::namespace("App\Http\Controllers\Api\Canteen")
+    ->prefix("menu")
+    ->group(function (Router $router) {
+        $router->get("menus", "MenuApiController@getWeeklyMenu");
+        $router->get("schedule", "MenuApiController@getTodaySchedule");
+        $router->get("announce", "MenuApiController@getAnnouncement");
+    });
