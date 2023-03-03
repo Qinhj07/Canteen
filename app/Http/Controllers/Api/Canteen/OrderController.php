@@ -127,19 +127,17 @@ class OrderController extends Controller
             ]);
         }
         $dateList = [];
-        collect(Carbon::parse($request->get("chosenDate"))->startOfMonth()->daysUntil(Carbon::parse($request->get("chosenDate"))->endOfMonth()))->each(function ($item) use (&$dateList) {
-            $dateList[$item->toDateString()] = 0;
-        });
-        $orders = Orders::where('openid', $request->get('openid'))
-            ->whereIn('status', [0, 1])
-            ->whereHas('receiptX', function ($query) {
-                $query->whereBetween('used_at', [Carbon::now()->startOfMonth()->toDateString(), Carbon::now()->endOfMonth()->toDateString()]);
-            })
-            ->get();
-
-        $orders->each(function ($item) use (&$dateList) {
-            if (object_get($item, 'receiptX')) {
-                $dateList[$item->receiptX->used_at] = 1;
+        collect(Carbon::parse($request->get("chosenDate"))->startOfMonth()->daysUntil(Carbon::parse($request->get("chosenDate"))->endOfMonth()))->each(function ($item) use (&$dateList, $request) {
+            $orders = Orders::where('openid', $request->get('openid'))
+                ->whereIn('status', [0, 1])
+                ->whereHas('receiptX', function ($query) use ($item){
+                    $query->where('used_at', $item->toDateString());
+                })
+                ->exists();
+            if ($orders){
+                $dateList[$item->toDateString()] = 1;
+            }else{
+                $dateList[$item->toDateString()] = 0;
             }
         });
         return $this->standardResponse([2000, "success", array_values($dateList)]);
@@ -290,6 +288,8 @@ class OrderController extends Controller
         $order->use_at = Carbon::now()->toDateTimeString();
         if ($order->save()) {
             return $this->standardResponse([2000, "success"]);
+        }else{
+            return $this->standardResponse([5000, "ServerError"]);
         }
     }
 
