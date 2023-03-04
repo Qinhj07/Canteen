@@ -9,6 +9,7 @@ use Exception;
 use GuzzleHttp\Exception\RequestException;
 use WeChatPay\Builder;
 use WeChatPay\Crypto\Rsa;
+use WeChatPay\Transformer;
 use WeChatPay\Util\PemUtil;
 use GuzzleHttp;
 
@@ -17,11 +18,13 @@ trait WxPayV3
     private $key;
     private $mchid;
     private $instance;
+    private $appid;
 
     public function __construct()
     {
         $this->key = Settings::where('name', 'payKey')->value('value');
         $this->mchid = Settings::where('name', 'mchid')->value('value');
+        $this->appid = Settings::where('name', 'appiId')->value('value');
         $merchantCertificateSerial = Settings::where('name', 'cateSerial')->value('value');
         $merchantPrivateKeyFilePath = "file://" . resource_path('PemFiles/apiclient_key.pem');
         $merchantPrivateKeyInstance = Rsa::from($merchantPrivateKeyFilePath, Rsa::KEY_TYPE_PRIVATE);
@@ -80,25 +83,30 @@ trait WxPayV3
 
     public function checkResult(string $orderId)
     {
-        // 暂时不能用，V3的检查支付结果接口
-//        $orderId = strtolower($orderId);
-//        $url = "v3/pay/transactions/out-trade-no/{$orderId}?mchid={$this->mchid}";
         try {
             $resp = $this->instance->v3->pay->transactions->outTradeNo->_out_trade_no_->get([
-                // 请求消息
-                'query' => ['mchid' => $this->mchid],
-                // 变量名 => 变量值
-                'out_trade_no' => strtolower($orderId),
+                'out_trade_no' => $orderId,
+                'query' => [
+                    'mchid' => $this->mchid,
+                ],
             ]);
         } catch (Exception $e) {
-            dump($e->getMessage());
+            $r = $e->getResponse();
             if ($e instanceof RequestException && $e->hasResponse()) {
-                $r = $e->getResponse();
-                dump($r->getStatusCode() . ' ' . $r->getReasonPhrase(), PHP_EOL);
-                dump($r->getBody(), PHP_EOL, PHP_EOL, PHP_EOL);
+                return [
+                    'state' => object_get(json_decode($r->getBody()), "trade_state", "QueryError"),
+                    'amount' => -1,
+                    'StatusCode' => $r->getStatusCode()
+                ];
             }
-            dd($e->getTraceAsString(), PHP_EOL);
         }
+        $respBody = json_decode($resp->getBody());
+        return [
+            'state' => object_get($respBody, 'trade_state', 'Error'),
+            'amount' => object_get(object_get($respBody, 'amount', null), 'payer_total',-1)
+        ];
+
+
     }
 
 }

@@ -293,9 +293,5 @@ class OrderController extends Controller
         }
     }
 
-    public function testPay()
-    {
-        $this->checkResult("9D82E391ED329E3D0DCDAD53EE818B0C");
-    }
 
 }

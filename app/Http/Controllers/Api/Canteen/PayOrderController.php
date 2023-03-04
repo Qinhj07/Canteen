@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api\Canteen;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PayOrderListResource;
 use App\Http\Traits\CheckBalancePay;
-use App\Http\Traits\CheckWxPay;
 use App\Http\Traits\NewOrder;
 use App\Http\Traits\StandardResponse;
 use App\Http\Traits\UniqueCode;
+use App\Http\Traits\WxPayV3;
 use App\Models\Canteen\Orders;
 use App\Models\Canteen\PayOrders;
 use App\Models\Canteen\Receipts;
@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Redis;
 
 class PayOrderController extends Controller
 {
-    use NewOrder, StandardResponse, UniqueCode, CheckWxPay, CheckBalancePay;
+    use NewOrder, StandardResponse, UniqueCode, CheckBalancePay, WxPayV3;
 
     public function newPayOrder(Request $request)
     {
@@ -112,11 +112,18 @@ class PayOrderController extends Controller
         }
         if ($order->pay_type == 1) {
             // 微信支付
-            $checkResult = $this->getWxPayResult($order->order_id, $order->real_pay);
+            $checkResultArray = $this->checkResult($order->order_id);
+            if ($checkResultArray['state'] == "SUCCESS") {
+                if ($checkResultArray['amount'] == $order->real_pay * 100) {
+                    $checkResult = 1;
+                }else{
+                    $checkResult = 0;
+                }
+            } else {
+                $checkResult = 0;
+            }
         } elseif ($order->pay_type == 2) {
-            $checkResult = $this->checkBalalnce($order->openid, $order->real_pay);
-//            return $this->standardResponse([4004, "暂不支持余额支付"]);
-        } else {
+            $checkResult = $this->checkBalalnce($order->openid, $order->real_pay);} else {
             return $this->standardResponse([4004, "支付方式异常"]);
         }
         if ($checkResult == 1) {

@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api\Base;
 
 use App\Http\Controllers\Controller;
 use App\Http\Traits\CheckUser;
-use App\Http\Traits\CheckWxPay;
 use App\Http\Traits\StandardResponse;
 use App\Http\Traits\UniqueCode;
+use App\Http\Traits\WxPayV3;
 use App\Models\Base\Balance;
 use App\Models\Base\ChargeLogs;
 use DB;
@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
 
 class BalanceApiController extends Controller
 {
-    use StandardResponse, CheckUser, UniqueCode, CheckWxPay;
+    use StandardResponse, CheckUser, UniqueCode, WxPayV3;
 
     public function getMyBalance(Request $request)
     {
@@ -86,7 +86,18 @@ class BalanceApiController extends Controller
             return $this->standardResponse([4004, "OrderOverTimeError"]);
         }
 
-        $checkResult = $this->getWxPayResult($chargeLog->order_id, $chargeLog->real_pay);
+//        $checkResult = $this->getWxPayResult($chargeLog->order_id, $chargeLog->real_pay);
+        // 微信支付
+        $checkResultArray = $this->checkResult($chargeLog->order_id,);
+        if ($checkResultArray['state'] == "SUCCESS") {
+            if ($checkResultArray['amount'] == $chargeLog->real_pay * 100) {
+                $checkResult = 1;
+            }else{
+                $checkResult = 0;
+            }
+        } else {
+            $checkResult = 0;
+        }
 //        $checkResult = 1; // 本地环境测试用
         if ($checkResult == 1){
             DB::beginTransaction();
