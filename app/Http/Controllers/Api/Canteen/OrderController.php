@@ -247,11 +247,11 @@ class OrderController extends Controller
             return $this->standardResponse([4004, "OverBookTimeLimitError"]);
         }
         $payOrder = PayOrders::where('order_id', $order->oid)->first();
-        if (object_get($payOrder, 'pat_type', -1) == 1) {
+        if (object_get($payOrder, 'pay_type', -1) == 1) {
             // 微信支付
             $reason = "退餐退款";
             $ret = $this->doRefund($order->oid, $order->real_price, $reason, $order->orderX->real_pay, $order->created_at, $order->phone);
-        } elseif (object_get($payOrder, 'pat_type', -1) == 2) {
+        } elseif (object_get($payOrder, 'pay_type', -1) == 2) {
             // 余额支付
             Balance::where('openid', $order->openid)->increment('amount', $order->real_price);
             $ret = $order->real_price * 100;
