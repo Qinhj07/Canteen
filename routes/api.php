@@ -29,6 +29,7 @@ Route::middleware(DecryptPas::class)
         $router->post('/getBalance', "BalanceApiController@getMyBalance");
         $router->post('/charge', "BalanceApiController@charge");
         $router->post('/checkCharge', "BalanceApiController@checkCharge");
+        $router->middleware(CheckLimits::class)->post('/chargeLogs', "BalanceApiController@getBalanceLog");
     });
 
 Route::middleware(DecryptPas::class)

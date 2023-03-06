@@ -5,7 +5,10 @@ namespace App\Http\Traits;
 
 
 use App\Models\Base\Balance;
+use App\Models\Base\ChargeLogs;
+use DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 
 trait CheckBalancePay
 {
@@ -19,6 +22,24 @@ trait CheckBalancePay
         if ($balance->amount < $price){
             return 0;
         }
-        return Balance::where('openid', $openid)->decrement('amount', $price);
+        DB::beginTransaction();
+        try {
+            $chargeLog = new ChargeLogs();
+            $chargeLog->order_id = $this->get32RamdonCode($openid);
+            $chargeLog->openid = $openid;
+            $chargeLog->phone = $balance->phone;
+            $chargeLog->amount = $price;
+            $chargeLog->real_pay = $price;
+            $chargeLog->type = 2;
+            $chargeLog->status = 1;
+            $chargeLog->comment = "订餐支付";
+            $chargeLog->save();
+            Balance::where('openid', $openid)->decrement('amount', $price);
+            DB::commit();
+        }catch (QueryException $exception){
+            DB::rollBack();
+            return 0;
+        }
+        return 1;
     }
 }

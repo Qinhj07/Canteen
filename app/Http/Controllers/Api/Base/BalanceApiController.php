@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Base;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BalanceLogResource;
 use App\Http\Traits\CheckUser;
 use App\Http\Traits\StandardResponse;
 use App\Http\Traits\UniqueCode;
@@ -79,7 +80,7 @@ class BalanceApiController extends Controller
         }
         try {
             $chargeLog = ChargeLogs::where('order_id', $request->get('orderId'))->firstOrFail();
-        }catch (ModelNotFoundException $exception){
+        } catch (ModelNotFoundException $exception) {
             return $this->standardResponse([4004, "OrderError"]);
         }
         if (Carbon::now()->subMinutes(10) > $chargeLog->created_at) {
@@ -92,14 +93,14 @@ class BalanceApiController extends Controller
         if ($checkResultArray['state'] == "SUCCESS") {
             if ($checkResultArray['amount'] == $chargeLog->real_pay * 100) {
                 $checkResult = 1;
-            }else{
+            } else {
                 $checkResult = 0;
             }
         } else {
             $checkResult = 0;
         }
 //        $checkResult = 1; // 本地环境测试用
-        if ($checkResult == 1){
+        if ($checkResult == 1) {
             DB::beginTransaction();
             try {
                 Balance::where('openid', $chargeLog->openid)->increment('amount', $chargeLog->amount);
@@ -108,14 +109,31 @@ class BalanceApiController extends Controller
                 $chargeLog->check_at = Carbon::now()->toDateTimeString();
                 $chargeLog->save();
                 DB::commit();
-            }catch (QueryException $exception){
+            } catch (QueryException $exception) {
                 DB::rollBack();
                 return $this->standardResponse([5000, "ServerError"]);
             }
             return $this->standardResponse([2000, "success"]);
-        }else {
+        } else {
             return $this->standardResponse([5000, "PayError", $checkResult]);
         }
+    }
+
+    public function getBalanceLog(Request $request)
+    {
+        $paramEnum = ['openid', 'phone'];
+        foreach ($paramEnum as $key => $value) {
+            if (blank($request->get($value))) {
+                return $this->standardResponse([4001, "No {$value} Error",]);
+            }
+        }
+        $balanceLogs = ChargeLogs::where('openid', $request->get('openid'))
+            ->where('phone', $request->get('phone'))
+            ->take($request->end)
+            ->skip($request->start)
+            ->latest()
+            ->get();
+        return $this->standardResponse([2000, 'success', BalanceLogResource::collection($balanceLogs)]);
     }
 
 }
