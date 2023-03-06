@@ -129,6 +129,7 @@ class BalanceApiController extends Controller
         }
         $balanceLogs = ChargeLogs::where('openid', $request->get('openid'))
             ->where('phone', $request->get('phone'))
+            ->whereIn('status', [0, 1, 9])
             ->take($request->end)
             ->skip($request->start)
             ->latest()

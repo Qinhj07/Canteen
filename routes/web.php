@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Models\Canteen\Menu;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -17,7 +16,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/demo', function () {
-    return Menu::all()->toArray();
-//    return ":)";
+
+Route::get('/consume', function () {
+    return view('Canteen.consume');
 });

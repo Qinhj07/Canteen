@@ -20,6 +20,7 @@ class OrderListResource extends JsonResource
         $mealType = Settings::where('name', "mealType")->value('extend');
         return [
             'order_id' => $this->code,
+            'phone' => $this->phone,
             'price' => $this->price,
             'realPrice' => $this->real_price,
             'status' => $status[$this->status],

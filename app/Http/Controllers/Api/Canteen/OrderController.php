@@ -10,6 +10,7 @@ use App\Http\Traits\WxPayV3;
 use App\Models\Base\Balance;
 use App\Models\Canteen\Orders;
 use App\Models\Canteen\PayOrders;
+use App\Models\Settings;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -294,7 +295,15 @@ class OrderController extends Controller
         $order->status = 0;
         $order->use_at = Carbon::now()->toDateTimeString();
         if ($order->save()) {
-            return $this->standardResponse([2000, "success"]);
+            $mealType = Settings::where('name', "mealType")->value('extend');
+            return $this->standardResponse([2000, "success", [
+                "phone" => $order->phone,
+                "status" => "已使用",
+                "item" => $order->items,
+                "useAt" => $order->use_at,
+                "mealType" => $mealType[object_get($order->receiptX, 'meal_type')],
+                "useDate" => object_get($order->receiptX, 'used_at'),
+            ]]);
         }else{
             return $this->standardResponse([5000, "ServerError"]);
         }
