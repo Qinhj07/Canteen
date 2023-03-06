@@ -193,6 +193,13 @@ class OrderController extends Controller
                 ->take($request->end)
                 ->latest()
                 ->get();
+        }elseif ($request->get('type') == 3) {
+            $orders = Orders::where('openid', $request->get('openid'))
+                ->where('status', 7)
+                ->skip($request->start)
+                ->take($request->end)
+                ->latest()
+                ->get();
         } else {
             return $this->standardResponse([4001, "OrderTypeError",]);
         }
