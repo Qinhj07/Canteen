@@ -55,6 +55,9 @@ Route::middleware(DecryptPas::class)
         $router->post('/refund', "OrderController@withdrawal");
         $router->post('/cancelOrder', "TradeApiController@cancelUnPayOrder");
         $router->get('/use/{code}', "OrderController@useOrder");
+        $router->get('/getUse', "SellApiController@getUsedOrder");
+        $router->get('/geByPhone/{phone}', "SellApiController@findByPhone");
+        $router->get('/getCount', "SellApiController@getCount");
     });
 
 Route::namespace("App\Http\Controllers\Api\Canteen")
